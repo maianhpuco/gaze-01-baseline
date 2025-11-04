@@ -1,0 +1,172 @@
+{
+  "folds": {
+    "fold1": {
+      "splits": {
+        "train": {
+          "count": 780,
+          "class_counts": {
+            "Normal": 263,
+            "CHF": 251,
+            "pneumonia": 266
+          },
+          "files": "configs/splits/fold1/train_ids.txt"
+        },
+        "val": {
+          "count": 195,
+          "class_counts": {
+            "Normal": 62,
+            "CHF": 72,
+            "pneumonia": 61
+          },
+          "files": "configs/splits/fold1/val_ids.txt"
+        },
+        "test": {
+          "count": 108,
+          "class_counts": {
+            "Normal": 35,
+            "CHF": 40,
+            "pneumonia": 33
+          },
+          "files": "configs/splits/fold1/test_ids.txt"
+        }
+      }
+    },
+    "fold2": {
+      "splits": {
+        "train": {
+          "count": 780,
+          "class_counts": {
+            "Normal": 257,
+            "CHF": 266,
+            "pneumonia": 257
+          },
+          "files": "configs/splits/fold2/train_ids.txt"
+        },
+        "val": {
+          "count": 195,
+          "class_counts": {
+            "Normal": 68,
+            "CHF": 57,
+            "pneumonia": 70
+          },
+          "files": "configs/splits/fold2/val_ids.txt"
+        },
+        "test": {
+          "count": 108,
+          "class_counts": {
+            "Normal": 35,
+            "CHF": 40,
+            "pneumonia": 33
+          },
+          "files": "configs/splits/fold2/test_ids.txt"
+        }
+      }
+    },
+    "fold3": {
+      "splits": {
+        "train": {
+          "count": 780,
+          "class_counts": {
+            "Normal": 255,
+            "CHF": 260,
+            "pneumonia": 265
+          },
+          "files": "configs/splits/fold3/train_ids.txt"
+        },
+        "val": {
+          "count": 195,
+          "class_counts": {
+            "Normal": 70,
+            "CHF": 63,
+            "pneumonia": 62
+          },
+          "files": "configs/splits/fold3/val_ids.txt"
+        },
+        "test": {
+          "count": 108,
+          "class_counts": {
+            "Normal": 35,
+            "CHF": 40,
+            "pneumonia": 33
+          },
+          "files": "configs/splits/fold3/test_ids.txt"
+        }
+      }
+    },
+    "fold4": {
+      "splits": {
+        "train": {
+          "count": 780,
+          "class_counts": {
+            "Normal": 264,
+            "CHF": 256,
+            "pneumonia": 260
+          },
+          "files": "configs/splits/fold4/train_ids.txt"
+        },
+        "val": {
+          "count": 195,
+          "class_counts": {
+            "Normal": 61,
+            "CHF": 67,
+            "pneumonia": 67
+          },
+          "files": "configs/splits/fold4/val_ids.txt"
+        },
+        "test": {
+          "count": 108,
+          "class_counts": {
+            "Normal": 35,
+            "CHF": 40,
+            "pneumonia": 33
+          },
+          "files": "configs/splits/fold4/test_ids.txt"
+        }
+      }
+    },
+    "fold5": {
+      "splits": {
+        "train": {
+          "count": 780,
+          "class_counts": {
+            "Normal": 261,
+            "CHF": 259,
+            "pneumonia": 260
+          },
+          "files": "configs/splits/fold5/train_ids.txt"
+        },
+        "val": {
+          "count": 195,
+          "class_counts": {
+            "Normal": 64,
+            "CHF": 64,
+            "pneumonia": 67
+          },
+          "files": "configs/splits/fold5/val_ids.txt"
+        },
+        "test": {
+          "count": 108,
+          "class_counts": {
+            "Normal": 35,
+            "CHF": 40,
+            "pneumonia": 33
+          },
+          "files": "configs/splits/fold5/test_ids.txt"
+        }
+      }
+    }
+  },
+  "dataset_class_distribution": {
+    "Normal": 360,
+    "CHF": 363,
+    "pneumonia": 360
+  },
+  "overall_written": {
+    "total": 5415,
+    "class_counts": {
+      "Normal": 1800,
+      "CHF": 1815,
+      "pneumonia": 1800
+    }
+  }
+}

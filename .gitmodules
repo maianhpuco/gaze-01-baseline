@@ -1,0 +1,6 @@
+[submodule "src/externals/eye-gaze-dataset"]
+	path = src/externals/eye-gaze-dataset
+	url = https://github.com/cxr-eye-gaze/eye-gaze-dataset.git
+[submodule "src/externals/GazeGNN"]
+	path = src/externals/GazeGNN
+	url = https://github.com/ukaukaaaa/GazeGNN
