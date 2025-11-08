@@ -1,0 +1,46 @@
+dataset_name: "egd-cxr"
+
+# Input paths
+input_path:
+  # Use PhysioNet 1.0.0 folder structure (same as data_egd-cxr.yaml)
+  # gaze_raw: /project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0
+  # dicom_raw: /project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/dicom_raw
+  # Alternative local paths (uncomment if using local data)
+  gaze_raw: /home/ubuntu/hung.nh2/gaze/physionet.org/files/egd-cxr/1.0.0
+  dicom_raw: /home/ubuntu/hung.nh2/gaze/dicom/dicom_raw
+  # File markers and gaze data are in the GazeMTL directory
+  gazemtl_dir: src/externals/GazeMTL
+
+# Dataset configuration
+data:
+  source: cxr2  # Options: cxr, cxr2, mets
+  train_scale: 1.0  # Fraction of training data to use
+  val_scale: 0.2  # Fraction of data for validation
+  batch_size: 32
+  num_workers: 8
+
+# Model configuration
+model:
+  pretrained: true  # Use pretrained ResNet50 weights
+  gaze_mtl_task: diffusivity  # Helper task: diffusivity, loc, time, or loc_time
+  task_weights: "1.0"  # Comma-separated weights: target,helper1,helper2,...
+
+# Training configuration
+train:
+  n_epochs: 15
+  lr: 0.0001
+  l2: 0.01  # Weight decay (L2 regularization)
+  optimizer: adam  # Options: adam, adamw
+  lr_scheduler: cosine_annealing  # Options: cosine_annealing, step, plateau, none
+  seed: 0  # Random seed
+
+# Output configuration
+output_path:
+  log_dir: src/externals/GazeMTL_pytorch/logs/gaze_mtl
+  checkpoint_metric: target/val/accuracy  # Metric for best model selection
+
+# Options
+options:
+  device: cuda  # cuda or cpu
+  resume: null  # Path to checkpoint to resume from (null for new training)
+

@@ -13,3 +13,8 @@ sanity_check_dataset_python:
 	python sanity_check_dataset.py --config configs/data_egd-cxr.yaml --batch-size 8 --num-workers 0 --max-fixations 64 --out-dir sample --split train
 	python sanity_check_dataset.py --config configs/data_egd-cxr.yaml --batch-size 8 --num-workers 0 --max-fixations 64 --out-dir sample --split val
 	python sanity_check_dataset.py --config configs/data_egd-cxr.yaml --batch-size 8 --num-workers 0 --max-fixations 64 --out-dir sample --split test
+
+# GazeMTL Training
+
+train_gazemtl_main:
+	python main_train_gazemtl.py --config configs/train_gazemtl.yaml

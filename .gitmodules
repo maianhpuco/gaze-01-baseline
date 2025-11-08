@@ -4,3 +4,6 @@
 [submodule "src/externals/GazeGNN"]
 	path = src/externals/GazeGNN
 	url = https://github.com/ukaukaaaa/GazeGNN
+[submodule "src/externals/GazeMTL"]
+	path = src/externals/GazeMTL
+	url = https://github.com/whistle-hikhi/observational.git
