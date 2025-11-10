@@ -13,6 +13,10 @@ split:
 sanity_check:
 	python sanity_check_dataset.py --config configs/data_egd-cxr.yaml --batch-size 8 --num-workers 0 --max-fixations 64 --out-dir sample
 
+# GRADIA preprocessing (ImageFolder export)
+gradia_preprocess:
+	python scripts/preprocess_gradia_data.py --config configs/data_egd-cxr.yaml --output runs/gradia_preprocessed
+
 # Training
 train_gnn:
 	python main_train_gnn.py --config configs/data_egd-cxr.yaml
@@ -24,7 +28,7 @@ train_temporal:
 	python main_train_temporal.py --config configs/train_temporal.yaml
 
 train_gradia:
-	python main_train_gradia.py --config configs/data_egd-cxr.yaml --attention_weight 0.0 --iou_samples 50
+	python main_train_gradia.py --config configs/data_egd-cxr.yaml --gradia_folder runs/gradia_preprocessed --attention_weight 1.0 --iou_samples 50
 
 # Evaluation
 eval_unet:

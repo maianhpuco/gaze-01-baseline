@@ -19,8 +19,10 @@ export PYTHONUNBUFFERED=1
 
 # Run training
 cd /home/qtnguy50/gaze-01-baseline
+# Ensure GRADIA preprocessing is up to date
+make gradia_preprocess
 stdbuf -oL -eL python -u main_train_gradia.py --config configs/data_egd-cxr.yaml \
+    --gradia_folder runs/gradia_preprocessed \
     --attention_weight 1.0 --iou_samples 50
 
 echo "GRADIA training completed!"
-

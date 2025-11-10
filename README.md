@@ -32,6 +32,11 @@ python main_train_unet.py --config configs/train_unet.yaml
 
 # Temporal RNN model (Sequential gaze processing)
 python main_train_temporal.py --config configs/train_temporal.yaml
+
+# GRADIA (Original pipeline — run preprocessing first)
+make gradia_preprocess
+python main_train_gradia.py --config configs/data_egd-cxr.yaml \
+  --gradia_folder runs/gradia_preprocessed --attention_weight 1.0 --iou_samples 50
 ```
 
 What's included

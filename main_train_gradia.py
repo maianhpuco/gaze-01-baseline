@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -12,7 +13,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from torchvision import transforms, datasets
 from sklearn.metrics import roc_curve, auc
 import torchvision.models as models
 from torchvision.models import ResNet50_Weights
@@ -221,14 +222,16 @@ class GRADIADataset(Dataset):
 
     def _resize_attention_label(self, attention_map: np.ndarray, width: int = 7, height: int = 7) -> np.ndarray:
         """Resize attention map following original GRADIA pattern."""
-        att_map = np.uint8(attention_map) * 255
+        # Keep float energy before resizing to avoid zeroing-out sparse maps
+        att_map = np.clip(attention_map, 0.0, 1.0).astype(np.float32)
         # Resize to 7x7 (matching GRADIA's ResNet layer4 output size)
         img_att_resized = cv2.resize(att_map, (width, height), interpolation=cv2.INTER_AREA)
         # Blur to reward nearby pixels
         img_att_resized = cv2.GaussianBlur(img_att_resized, (3, 3), 0)
         # Normalize
-        if np.max(img_att_resized) > 0:
-            img_att_resized = np.float32(img_att_resized / np.max(img_att_resized))
+        max_val = np.max(img_att_resized)
+        if max_val > 0:
+            img_att_resized = np.float32(img_att_resized / max_val)
         else:
             img_att_resized = np.float32(img_att_resized)
         return img_att_resized
@@ -286,6 +289,72 @@ class GRADIADataset(Dataset):
         return img_tensor, y_t, gaze_tensor, pred_weight, att_weight
 
 
+class GRADIAImageFolderDataset(Dataset):
+    """Load GRADIA-style ImageFolder exports with precomputed attention maps."""
+    def __init__(self, root: Path, split: str = "train", mode: str = "train"):
+        self.split_root = Path(root) / split
+        if not self.split_root.exists():
+            raise FileNotFoundError(f"GRADIA ImageFolder split not found: {self.split_root}")
+        self.mode = mode
+
+        self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                              std=[0.229, 0.224, 0.225])
+
+        if mode == "train":
+            transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                self.normalize,
+            ])
+        else:
+            transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                self.normalize,
+            ])
+
+        self.dataset = datasets.ImageFolder(str(self.split_root), transform=transform)
+        self.samples = self.dataset.samples
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
+    @staticmethod
+    def _resize_attention_label(attention_map: np.ndarray, width: int = 7, height: int = 7) -> np.ndarray:
+        """Exact resizing pipeline from original GRADIA (uint8 → resize → blur)."""
+        att_map = np.clip(attention_map, 0.0, 1.0)
+        att_map_uint8 = np.uint8(att_map * 255.0)
+        img_att_resized = cv2.resize(att_map_uint8, (width, height), interpolation=cv2.INTER_AREA)
+        img_att_resized = cv2.GaussianBlur(img_att_resized, (3, 3), 0)
+        max_val = np.max(img_att_resized)
+        if max_val > 0:
+            img_att_resized = np.float32(img_att_resized / max_val)
+        else:
+            img_att_resized = np.float32(img_att_resized)
+        return img_att_resized
+
+    def __getitem__(self, idx: int):
+        img, label = self.dataset[idx]
+        path, _ = self.samples[idx]
+        att_path = Path(path).with_suffix(".npy")
+        if att_path.exists():
+            att_map_224 = np.load(att_path)
+        else:
+            att_map_224 = np.zeros((224, 224), dtype=np.float32)
+
+        gaze_map_7x7 = self._resize_attention_label(att_map_224, width=7, height=7)
+        att_weight = 1.0 if float(np.max(att_map_224)) > 0 else 0.0
+
+        return (
+            img,
+            torch.tensor(label, dtype=torch.long),
+            torch.from_numpy(gaze_map_7x7).float(),
+            torch.tensor(1.0, dtype=torch.float32),
+            torch.tensor(att_weight, dtype=torch.float32),
+        )
+
+
 # ------------- Utils -------------
 def build_splits_ids(cfg: Cfg) -> Tuple[List[str], List[str], List[str]]:
     split_dir = Path(cfg.get("split_files", "dir", default=ROOT / "configs" / "splits"))
@@ -300,6 +369,20 @@ def build_splits_ids(cfg: Cfg) -> Tuple[List[str], List[str], List[str]]:
                 ids.append(s)
         return ids
     return _read("train"), _read("val"), _read("test")
+
+
+def load_preprocessed_classes(root: Path, fallback: List[str]) -> List[str]:
+    """Read class ordering from preprocessing metadata if present."""
+    meta_path = Path(root) / "classes.json"
+    if meta_path.exists():
+        try:
+            data = json.loads(meta_path.read_text(encoding="utf-8"))
+            classes = data.get("classes")
+            if isinstance(classes, list) and classes:
+                return [str(c) for c in classes]
+        except Exception:
+            pass
+    return fallback
 
 
 def compute_metrics(logits: torch.Tensor, labels: torch.Tensor, num_classes: int = 3) -> Tuple[float, float, List[float]]:
@@ -503,6 +586,8 @@ def main() -> None:
                    help="Only evaluate on test set")
     ap.add_argument("--checkpoint", type=str, default=None,
                    help="Path to checkpoint for evaluation or resume training")
+    ap.add_argument("--gradia_folder", type=Path, default=None,
+                   help="Path to GRADIA-style ImageFolder export (use scripts/preprocess_gradia_data.py)")
     args = ap.parse_args()
 
     cfg = Cfg(args.config)
@@ -514,7 +599,6 @@ def main() -> None:
     dicom_root = Path(cfg.get("input_path", "dicom_raw"))
 
     classes = cfg.get("train", "classes", default=["CHF", "pneumonia", "Normal"])
-    num_classes = len(classes)
     batch_size = int(cfg.get("train", "batch_size", default=32))
     epochs = int(cfg.get("train", "epochs", default=50))
     max_fix = int(cfg.get("train", "max_fixations", default=8))
@@ -526,21 +610,30 @@ def main() -> None:
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     best_name = cfg.get("output_path", "best_ckpt_name", default="gradia_best.pt")
 
-    # Splits
-    train_ids, val_ids, test_ids = build_splits_ids(cfg)
+    preprocessed_root = args.gradia_folder
+    if preprocessed_root is not None:
+        classes = load_preprocessed_classes(preprocessed_root, classes)
+        num_classes = len(classes)
+        tr_ds = GRADIAImageFolderDataset(preprocessed_root, split="train", mode="train")
+        val_ds = GRADIAImageFolderDataset(preprocessed_root, split="val", mode="test")
+        test_ds = GRADIAImageFolderDataset(preprocessed_root, split="test", mode="test")
+    else:
+        # Splits
+        train_ids, val_ids, test_ids = build_splits_ids(cfg)
 
-    # Build base datasets
-    dtr_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
-                             max_fixations=max_fix, case_ids=train_ids, classes=classes)
-    dval_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
-                              max_fixations=max_fix, case_ids=val_ids, classes=classes)
-    dtest_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
-                               max_fixations=max_fix, case_ids=test_ids, classes=classes)
+        # Build base datasets
+        dtr_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
+                                 max_fixations=max_fix, case_ids=train_ids, classes=classes)
+        dval_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
+                                  max_fixations=max_fix, case_ids=val_ids, classes=classes)
+        dtest_base = EGDCXRDataset(root=root, seg_path=seg, transcripts_path=transcripts, dicom_root=dicom_root,
+                                   max_fixations=max_fix, case_ids=test_ids, classes=classes)
 
-    # Wrap for GRADIA (following original GRADIA dataloader pattern)
-    tr_ds = GRADIADataset(dtr_base, mode="train")
-    val_ds = GRADIADataset(dval_base, mode="test")
-    test_ds = GRADIADataset(dtest_base, mode="test")
+        # Wrap for GRADIA (following original GRADIA dataloader pattern)
+        tr_ds = GRADIADataset(dtr_base, mode="train")
+        val_ds = GRADIADataset(dval_base, mode="test")
+        test_ds = GRADIADataset(dtest_base, mode="test")
+        num_classes = len(classes)
 
     # DataLoader setup following original GRADIA (shuffle=True for train, False for val/test)
     # Note: pin_memory=False instead of True to avoid SLURM deadlock issues
