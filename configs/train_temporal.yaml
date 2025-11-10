@@ -1,0 +1,39 @@
+dataset_name: "egd-cxr"
+
+input_path:
+  gaze_raw: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts
+  dicom_raw: /home/qtnguy50/gaze-01-baseline/datasets/dicom_raw
+  segmentation_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
+  transcripts_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
+  # Path to pre-generated heatmap PNG files (temporal frames and static heatmap)
+  heatmaps_path: /home/qtnguy50/gaze-01-baseline/datasets/heatmaps/fixation_heatmaps
+  # Path to filtered CSV files (created by create_filtered_csv.py)
+  csv_dir: /home/qtnguy50/gaze-01-baseline/datasets/filtered_csvs/fold1
+
+split_files:
+  dir: /home/qtnguy50/gaze-01-baseline/configs/splits/fold1
+
+train:
+  classes: ["Normal", "CHF", "pneumonia"]
+  batch_size: 24  # Reduced from 32 to prevent OOM
+  epochs: 500  # With early stopping (patience=20)
+  max_fixations: 30
+  num_workers: 0  # Set to 0 to avoid multiprocessing deadlock in SLURM
+  lr: 1.0e-4  # Fixed: was 1e-3 (too high), now matches GRADIA for stability
+  weight_decay: 1.0e-4
+  
+  # Temporal RNN specific
+  model_type: temporal  # 'baseline' or 'temporal'
+  dropout: 0.5
+  hidden_dim: 64
+  emb_dim: 64
+  hidden_hm: [256, 128]
+  num_layers_hm: 1
+  cell: lstm  # 'lstm' or 'gru'
+  brnn_hm: true  # bidirectional RNN
+  attention: true  # use attention mechanism
+
+output_path:
+  checkpoint_dir: runs/checkpoints/temporal
+  best_ckpt_name: temporal_best.pt
+

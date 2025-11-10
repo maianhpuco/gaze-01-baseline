@@ -1,7 +1,23 @@
 dataset_name: "egd-cxr"
 
 input_path:
-  gaze_raw: /project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0
-  dicom_raw: /project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/dicom_raw
-  segmentation_dir: /project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0/audio_segmentation_transcripts
-  transcripts_dir: /project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/transcripts
+  gaze_raw: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts
+  dicom_raw: /home/qtnguy50/gaze-01-baseline/datasets/dicom_raw
+  segmentation_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
+  transcripts_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
+
+split_files:
+  dir: configs/splits/fold1
+
+train:
+  classes: ["CHF", "pneumonia", "Normal"]
+  batch_size: 16  # Reduced from 32 to prevent OOM with GradCAM
+  epochs: 500  # With early stopping (patience=20)
+  max_fixations: 8  # GRADIA uses fewer fixations than temporal model
+  num_workers: 0  # Set to 0 to avoid multiprocessing deadlock in SLURM
+  lr: 1.0e-4  # Note: main_train_gradia.py overrides this to 0.0001 to match original
+  weight_decay: 1.0e-4
+
+output_path:
+  checkpoint_dir: runs/checkpoints/gradia
+  best_ckpt_name: gradia_best.pt

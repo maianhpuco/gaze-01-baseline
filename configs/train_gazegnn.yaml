@@ -1,19 +1,19 @@
 dataset_name: "egd-cxr"
 
 input_path:
-  gaze_raw: /project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0
-  dicom_raw: /project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/dicom_raw
-  segmentation_dir: /project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0/audio_segmentation_transcripts
-  transcripts_dir: /project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/transcripts
+  gaze_raw: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts
+  dicom_raw: /home/qtnguy50/gaze-01-baseline/datasets/dicom_raw
+  segmentation_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
+  transcripts_dir: /home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd_cxr/transcripts/audio_segmentation_transcripts
 
 split_files:
-  dir: /project/hnguyen2/mvu9/folder_04_ma/gaze-01-baseline/configs/splits/fold1
+  dir: /home/qtnguy50/gaze-01-baseline/configs/splits/fold1
 
 train:
   classes: ["CHF", "pneumonia", "Normal"]
   batch_size: 32
   epochs: 50
-  max_fixations: 8
+  max_fixations: 30  # Match temporal and unet for consistent data loading
   num_workers: 2
   lr: 3.0e-4
   weight_decay: 1.0e-4
@@ -33,5 +33,4 @@ output_path:
 options:
   model: gazegnn
   image_backbone: pvig_ti_224_gelu
-
 

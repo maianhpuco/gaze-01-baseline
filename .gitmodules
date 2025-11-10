@@ -4,3 +4,9 @@
 [submodule "src/externals/GazeGNN"]
 	path = src/externals/GazeGNN
 	url = https://github.com/ukaukaaaa/GazeGNN
+[submodule "src/externals/GRADIA"]
+	path = src/externals/GRADIA
+	url = https://github.com/YuyangGao/GRADIA.git
+[submodule "GRADIA"]
+	path = GRADIA
+	url = https://github.com/YuyangGao/GRADIA.git

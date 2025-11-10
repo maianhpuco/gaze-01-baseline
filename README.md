@@ -19,11 +19,22 @@ EGDCXRDataset ready: 780 cases | classes=['CHF', 'pneumonia', 'Normal'] | class_
 EGDCXRDataset ready: 195 cases | classes=['CHF', 'pneumonia', 'Normal'] | class_counts=[72.0, 61.0, 62.0] | regions=4 | bbox_classes=17
 EGDCXRDataset ready: 108 cases | classes=['CHF', 'pneumonia', 'Normal'] | class_counts=[40.0, 33.0, 35.0] | regions=4 | bbox_classes=17
 
-```
+## Training Models
+
+Three training scripts are available, all following the same structure and using the same dataset splits:
+
+```bash
+# GazeGNN model (Graph Neural Network with gaze)
 python main_train_gnn.py --config configs/train_gazegnn.yaml
+
+# UNet model (Segmentation + Classification)
+python main_train_unet.py --config configs/train_unet.yaml
+
+# Temporal RNN model (Sequential gaze processing)
+python main_train_temporal.py --config configs/train_temporal.yaml
 ```
 
-What’s included
+What's included
 - `main_train_gnn.py`
   - Loads splits from `split_files.dir`.
   - Builds `EGDCXRDataset` for train/val/test with your classes and `max_fixations`.
@@ -52,8 +63,26 @@ Notes
 - The “(cls=..., txt=..., gate(...))” fields are formatted as requested. Since the core GazeGNN model doesn’t expose those internal components via the public API, `cls` mirrors CE loss, `txt` and `gate(μ,σ)` are placeholders (0.0). If you want real gate stats, we can instrument the model forward to return them.
 - The adapter reproduces GazeGNN’s gaze preprocessing: accumulate dwell per pixel on a 224×224 grid, log+normalize, apply the same image transforms, then downsample to 56×56 via sliding window sum.
 
-Key files created or updated
-- New: `main_train_gnn.py`
-- New: `configs/train_gazegnn.yaml`
+- `main_train_unet.py`
+  - UNet encoder-decoder with dual outputs: segmentation masks (from fixation heatmaps) + classification
+  - Uses same splits and logging format as GazeGNN
+  - Configurable gamma for balancing segmentation vs classification loss
+  - Supports both Dice loss and BCE for segmentation
+  - Multi-label classification with BCEWithLogitsLoss
 
-If you want me to add weighted sampler support, early stopping by `patience`, or to filter out ambiguous labels ahead of time (instead of remapping to 0), I can extend `main_train_gnn.py` accordingly. 
+- `main_train_temporal.py`
+  - Temporal RNN model processing sequential gaze heatmaps
+  - Combines image CNN features with temporal gaze sequence features
+  - Supports LSTM/GRU with attention mechanism
+  - Handles variable-length fixation sequences with padding
+  - Multi-label classification output
+
+Key files created
+- Training scripts: `main_train_gnn.py`, `main_train_unet.py`, `main_train_temporal.py`
+- Configs: `configs/train_gazegnn.yaml`, `configs/train_unet.yaml`, `configs/train_temporal.yaml`
+
+All three models:
+- Use the same train/val/test splits from `split_files.dir`
+- Output consistent logging format: `[Epoch N] TRAIN/VAL/TEST loss/acc/macroAUC/perClassAUC`
+- Save best checkpoint based on validation macroAUC
+- Support multi-GPU training with DataParallel 

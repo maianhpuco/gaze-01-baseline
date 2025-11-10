@@ -11,8 +11,8 @@ import time
 from pathlib import Path
 
 # Configuration
-RAW_DATA_PATH = "/project/hnguyen2/mvu9/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0"
-OUTPUT_DIR = "/project/hnguyen2/mvu9/datasets/gaze_data/egd-cxr/dicom_raw"
+RAW_DATA_PATH = "/home/qtnguy50/gaze-01-baseline/datasets/gaze_data/physionet.org/files/egd-cxr/1.0.0"
+OUTPUT_DIR = "/home/qtnguy50/gaze-01-baseline/datasets/gaze_data/egd-cxr/dicom_raw"
 USERNAME = "hiirooo"
 # Use interactive password entry via --ask-password per user request
 # Note: Do NOT hardcode passwords in source code
@@ -219,11 +219,11 @@ def print_run_command():
     print("=" * 80)
     print("Using GPU job and conda environment:")
     print()
-    print("srun --jobid=206025 bash -c \"cd /project/hnguyen2/mvu9/folder_04_ma/gaze-01 && /project/hnguyen2/mvu9/conda_envs/wsi-agent/bin/python src/download/download_dicom_with_wget_egd.py\"")
+    print("srun --jobid=206025 bash -c \"cd /home/qtnguy50/gaze-01-baseline/datasetsfolder_04_ma/gaze-01 && /home/qtnguy50/gaze-01-baseline/datasetsconda_envs/wsi-agent/bin/python src/download/download_dicom_with_wget_egd.py\"")
     print()
     print("Or run directly:")
     print()
-    print("cd /project/hnguyen2/mvu9/folder_04_ma/gaze-01")
+    print("cd /home/qtnguy50/gaze-01-baseline/datasetsfolder_04_ma/gaze-01")
     print("python3 src/download/download_dicom_with_wget_egd.py")
     print("=" * 80)
 
