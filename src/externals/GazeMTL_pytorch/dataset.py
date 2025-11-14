@@ -9,6 +9,8 @@ import torch
 from torch.utils.data import Dataset
 from PIL import Image
 import pydicom
+import pandas as pd
+from pathlib import Path
 
 # Add parent directory to path to import utils
 gazemtl_dir = os.path.join(os.path.dirname(__file__), '..', 'GazeMTL')
@@ -35,7 +37,7 @@ NUM_GAZE_DIMS_DICT = {
     "diffusivity": 1,
 }
 
-NUM_CLASSES_DICT = {"cxr": 2, "mets": 2, "cxr2": 2}
+NUM_CLASSES_DICT = {"cxr": 2, "mets": 2, "cxr2": 3}  # cxr2 has 3 classes: CHF, pneumonia, Normal
 
 HELPER_OUTPUT_DIM_DICT = {"loc": 9, "time": 2, "diffusivity": 2}
 
@@ -88,6 +90,38 @@ class GazeMTLDataset(Dataset):
             os.chdir(original_cwd)
         print(f"{len(self.file_markers)} files in {split_type} split...")
         
+        # For cxr2, load 3-class labels from master_sheet.csv if available
+        self.master_sheet_labels = {}
+        if source == "cxr2" and gaze_raw_dir:
+            try:
+                master_sheet_path = Path(gaze_raw_dir) / "master_sheet.csv"
+                if master_sheet_path.exists():
+                    df = pd.read_csv(master_sheet_path, engine="python")
+                    class_names = ["CHF", "pneumonia", "Normal"]
+                    for _, row in df.iterrows():
+                        dicom_id = str(row.get("dicom_id", ""))
+                        if pd.isna(dicom_id):
+                            continue
+                        # Determine class: 0=CHF, 1=pneumonia, 2=Normal
+                        chf = int(row.get("CHF", 0) or 0)
+                        pneumonia = int(row.get("pneumonia", 0) or 0)
+                        normal = int(row.get("Normal", 0) or 0)
+                        
+                        # Assign class based on which is 1 (mutually exclusive)
+                        if chf == 1:
+                            self.master_sheet_labels[dicom_id] = 0  # CHF
+                        elif pneumonia == 1:
+                            self.master_sheet_labels[dicom_id] = 1  # pneumonia
+                        elif normal == 1:
+                            self.master_sheet_labels[dicom_id] = 2  # Normal
+                        else:
+                            # Default to 0 if none are set
+                            self.master_sheet_labels[dicom_id] = 0
+                    print(f"Loaded {len(self.master_sheet_labels)} 3-class labels from master_sheet.csv")
+            except Exception as e:
+                print(f"Warning: Could not load master_sheet.csv for 3-class labels: {e}")
+                self.master_sheet_labels = {}
+        
         # Load helper task labels if using gaze_mtl
         # Need to change to GazeMTL directory because utils.py uses relative paths
         helper_task_labels_dict = {}
@@ -122,8 +156,20 @@ class GazeMTLDataset(Dataset):
             
             self.image_ids.append(img_id)
             
-            # Standardize label (0 = negative, 1 = positive)
+            # Standardize label 
+            # For cxr2: 0=CHF, 1=pneumonia, 2=Normal (3 classes)
+            # For cxr/mets: 0=negative, 1=positive (2 classes)
             label = standardize_label(label, source)
+            
+            # For cxr2, try to get 3-class label from master_sheet if available
+            if source == "cxr2" and self.master_sheet_labels:
+                # Try to find label by dicom_id (img_name should be the dicom_id)
+                if img_name in self.master_sheet_labels:
+                    label = self.master_sheet_labels[img_name]
+                # Also try with full img_id in case that's the format
+                elif img_id in self.master_sheet_labels:
+                    label = self.master_sheet_labels[img_id]
+            
             self.target_labels.append(label)
             
             # Get helper task labels

@@ -68,11 +68,13 @@ class Trainer:
         
         # Initialize metrics
         self.metrics = {}
-        # Target task metrics (binary classification)
+        # Target task metrics (determine task type based on model's num_classes)
+        num_target_classes = model.num_classes
+        target_task_type = 'binary' if num_target_classes == 2 else 'multiclass'
         for split in ['train', 'val', 'test']:
             self.metrics[f'target/{split}'] = {
-                'accuracy': torchmetrics.Accuracy(task='binary', num_classes=2).to(device),
-                'auc': torchmetrics.AUROC(task='binary', num_classes=2).to(device),
+                'accuracy': torchmetrics.Accuracy(task=target_task_type, num_classes=num_target_classes).to(device),
+                'auc': torchmetrics.AUROC(task=target_task_type, num_classes=num_target_classes, average='macro').to(device),
             }
         
         # Helper task metrics (dimension depends on task)
@@ -139,7 +141,11 @@ class Trainer:
                 probs = F.softmax(target_logits, dim=1)
                 preds = target_logits.argmax(dim=1)  # Get predicted class indices
                 self.metrics['target/train']['accuracy'].update(preds, targets)
-                self.metrics['target/train']['auc'].update(probs[:, 1], targets)
+                # For binary: use probs[:, 1], for multiclass: use all probs
+                if self.model.num_classes == 2:
+                    self.metrics['target/train']['auc'].update(probs[:, 1], targets)
+                else:
+                    self.metrics['target/train']['auc'].update(probs, targets)
                 
                 # Helper task metrics
                 for i in range(self.model.num_helper_tasks):
@@ -151,7 +157,11 @@ class Trainer:
                         helper_preds = helper_logits.argmax(dim=1)  # Get predicted class indices
                         self.metrics[f'{task_name}/train']['accuracy'].update(helper_preds, helper_targets)
                         if f'{task_name}/train' in self.metrics and 'auc' in self.metrics[f'{task_name}/train']:
-                            self.metrics[f'{task_name}/train']['auc'].update(helper_probs[:, 1], helper_targets)
+                            # For binary: use probs[:, 1], for multiclass: use all probs
+                            if helper_probs.shape[1] == 2:
+                                self.metrics[f'{task_name}/train']['auc'].update(helper_probs[:, 1], helper_targets)
+                            else:
+                                self.metrics[f'{task_name}/train']['auc'].update(helper_probs, helper_targets)
             
             total_loss += total_batch_loss.item()
             for task, loss in losses.items():
@@ -247,7 +257,11 @@ class Trainer:
             probs = F.softmax(target_logits, dim=1)
             preds = target_logits.argmax(dim=1)  # Get predicted class indices
             self.metrics[f'target/{split}']['accuracy'].update(preds, targets)
-            self.metrics[f'target/{split}']['auc'].update(probs[:, 1], targets)
+            # For binary: use probs[:, 1], for multiclass: use all probs
+            if self.model.num_classes == 2:
+                self.metrics[f'target/{split}']['auc'].update(probs[:, 1], targets)
+            else:
+                self.metrics[f'target/{split}']['auc'].update(probs, targets)
             
             # Helper task metrics
             for i in range(self.model.num_helper_tasks):
@@ -260,7 +274,11 @@ class Trainer:
                     if f'{task_name}/{split}' in self.metrics:
                         self.metrics[f'{task_name}/{split}']['accuracy'].update(helper_preds, helper_targets)
                         if 'auc' in self.metrics[f'{task_name}/{split}']:
-                            self.metrics[f'{task_name}/{split}']['auc'].update(helper_probs[:, 1], helper_targets)
+                            # For binary: use probs[:, 1], for multiclass: use all probs
+                            if helper_probs.shape[1] == 2:
+                                self.metrics[f'{task_name}/{split}']['auc'].update(helper_probs[:, 1], helper_targets)
+                            else:
+                                self.metrics[f'{task_name}/{split}']['auc'].update(helper_probs, helper_targets)
             
             # Store predictions
             all_preds['target'].append(probs.cpu())
