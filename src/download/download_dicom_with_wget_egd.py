@@ -223,7 +223,7 @@ def print_run_command():
     print()
     print("Or run directly:")
     print()
-    print("cd /project/hnguyen2/mvu9/folder_04_ma/gaze-01")
+    print("cd /home/qtnguy50/gaze/gaze-01-baseline/folder_04_ma/gaze-01")
     print("python3 src/download/download_dicom_with_wget_egd.py")
     print("=" * 80)
 

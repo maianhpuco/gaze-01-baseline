@@ -1,6 +1,8 @@
 PYTHON ?= python
+CONFIG ?= configs/train_gazegnn.yaml
+GPUS ?= 0,1
 
-# .PHONY: prepare_transcripts test_dataset train_model eval_model
+.PHONY: split sanity_check_dataset sanity_check_dataset_python train_gazemtl_main train_gradia train_temporal train_unet eval_all
 
 split:
 	python create_splits.py --config-path configs/data_egd-cxr.yaml \
@@ -18,3 +20,19 @@ sanity_check_dataset_python:
 
 train_gazemtl_main:
 	python main_train_gazemtl.py --config configs/train_gazemtl.yaml
+
+# GRADIA Training
+train_gradia:
+	bash scripts/run_gradia.sh
+
+# Temporal Model Training
+train_temporal:
+	bash scripts/run_temporal.sh
+
+# UNet Model Training
+train_unet:
+	bash scripts/run_unet.sh
+
+# Evaluation (all models)
+eval_all:
+	bash scripts/eval_all.sh $(CONFIG) $(GPUS)
